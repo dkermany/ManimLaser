@@ -1,0 +1,8 @@
+# This file is used internally by FFMPEG.
+file 'file:/home/mstudxk5/Projects/ManimLaser/media/videos/manim_autocorrelation/480p15/partial_movie_files/LaserPulseCombination/1185818338_2917003793_223132457.mp4'
+file 'file:/home/mstudxk5/Projects/ManimLaser/media/videos/manim_autocorrelation/480p15/partial_movie_files/LaserPulseCombination/624642324_3920308005_1043086762.mp4'
+file 'file:/home/mstudxk5/Projects/ManimLaser/media/videos/manim_autocorrelation/480p15/partial_movie_files/LaserPulseCombination/624642324_229896448_1083884246.mp4'
+file 'file:/home/mstudxk5/Projects/ManimLaser/media/videos/manim_autocorrelation/480p15/partial_movie_files/LaserPulseCombination/624642324_1938201846_1541699872.mp4'
+file 'file:/home/mstudxk5/Projects/ManimLaser/media/videos/manim_autocorrelation/480p15/partial_movie_files/LaserPulseCombination/624642324_229896448_3433628622.mp4'
+file 'file:/home/mstudxk5/Projects/ManimLaser/media/videos/manim_autocorrelation/480p15/partial_movie_files/LaserPulseCombination/624642324_2089642493_231763104.mp4'
+file 'file:/home/mstudxk5/Projects/ManimLaser/media/videos/manim_autocorrelation/480p15/partial_movie_files/LaserPulseCombination/624642324_2999291583_181084990.mp4'
