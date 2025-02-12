@@ -41,9 +41,7 @@ class BeatFrequency(Scene):
         self.constructive_label = self.create_label("Constructive", self.axes_wave1, self.COLORS["constructive"])
         self.destructive_label = self.create_label("Destructive", self.axes_wave1, self.COLORS["destructive"], RIGHT*2.5)
 
-        self.animate()
 
-    def animate(self):
         # Animate individual waves
         self.play(Create(self.axes_wave1), Create(self.axes_wave2))
         self.play(Create(self.wave1_graph), Write(self.wave1_label))
@@ -58,19 +56,37 @@ class BeatFrequency(Scene):
         self.play(Create(self.axes_bottom), Write(self.interference_label))
         self.play(Write(self.constructive_label), Write(self.destructive_label))
 
+
         # Create dynamic waves and interference
-        dynamic_wave1, dynamic_wave2, dynamic_interference = self.create_dynamic_graphs(
-                self.axes_wave1,
-                self.axes_bottom,
-                self.wave1,
-                self.wave2,
-                self.interference
+        dynamic_wave1 = VGroup()
+        dynamic_wave2 = VGroup()
+        dynamic_interference = VGroup()
+        for t in np.linspace(0, 2, 200):
+            segment_wave1 = self.axes_wave1.plot(lambda x: self.wave1(x), x_range=[t, t + 0.01], color=self.get_color(self.wave1, self.wave2, t))
+            segment_wave2 = self.axes_wave1.plot(lambda x: self.wave2(x), x_range=[t, t + 0.01], color=self.get_color(self.wave1, self.wave2, t))
+            segment_interference = self.axes_bottom.plot(lambda x: self.interference(x), x_range=[t, t + 0.01], color=self.COLORS["interference"])
+            dynamic_wave1.add(segment_wave1)
+            dynamic_wave2.add(segment_wave2)
+            dynamic_interference.add(segment_interference)
+
+        infer_dot, wave1_dot, wave2_dot = (
+            Dot(color=self.COLORS[i], radius=0.075)
+            for i in ("interference", "wave1", "wave2")
         )
+        self.add(infer_dot, wave1_dot, wave2_dot)
 
         # Animate dynamic waves and interference
         for segment1, segment2, segment_interf in zip(dynamic_wave1, dynamic_wave2, dynamic_interference):
-            self.play(Create(segment1), Create(segment2), Create(segment_interf), run_time=0.02, rate_func=linear)
-
+            self.play(
+                Create(segment1),
+                Create(segment2),
+                Create(segment_interf),
+                MoveAlongPath(infer_dot, segment_interf),
+                MoveAlongPath(wave1_dot, segment1),
+                MoveAlongPath(wave2_dot, segment2),
+                run_time=0.02,
+                rate_func=linear
+            )
         self.wait(2)
 
     def create_axes(self, position):
@@ -87,22 +103,6 @@ class BeatFrequency(Scene):
 
     def create_label(self, text, axes, color, position=0):
         return Text(text, font_size=24, color=color).move_to(axes.get_corner(UL) + RIGHT * 1.5 + position)
-
-    def create_dynamic_graphs(self, axes_wave1, axes_bottom, wave1, wave2, interference):
-        dynamic_wave1 = VGroup()
-        dynamic_wave2 = VGroup()
-        dynamic_interference = VGroup()
-
-        for t in np.linspace(0, 2, 200):
-            segment_wave2 = axes_wave1.plot(lambda x: wave2(x), x_range=[t, t + 0.01], color=self.get_color(wave1, wave2, t))
-            segment_wave1 = axes_wave1.plot(lambda x: wave1(x), x_range=[t, t + 0.01], color=self.get_color(wave1, wave2, t))
-            segment_interference = axes_bottom.plot(lambda x: interference(x), x_range=[t, t + 0.01], color=self.COLORS["interference"])
-
-            dynamic_wave2.add(segment_wave2)
-            dynamic_wave1.add(segment_wave1)
-            dynamic_interference.add(segment_interference)
-
-        return dynamic_wave1, dynamic_wave2, dynamic_interference
 
     def get_color(self, wave1, wave2, t):
         if np.abs(wave1(t) + wave2(t)) > 0.5 * (np.abs(wave1(t)) + np.abs(wave2(t))):
