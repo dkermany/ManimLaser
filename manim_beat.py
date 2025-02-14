@@ -1,10 +1,15 @@
+import colorsys
 from manim import *
 from manim.utils.color.X11 import VIOLET
+from manim.utils.color import color_to_rgb, rgb_to_color
+from manim.utils.color.XKCD import BLUEGREEN
+
+ma
 
 class BeatFrequency(Scene):
     COLORS = {
         "wave1": VIOLET,
-        "wave2": YELLOW,
+        "wave2": BLUEGREEN,
         "wave3": ORANGE,
         "interference": BLUE,
         "constructive": GREEN,
@@ -13,12 +18,13 @@ class BeatFrequency(Scene):
     }
     X_MAX = 2
 
-    def create_axes(self, position, height=3):
+    def create_axes(self, position, height=3, labels=False):
         axes = Axes(
             x_range=[0, self.X_MAX, 0.2],
             y_range=[-2.5, 2.5, 0.5],
             x_length=10,
             y_length=height,
+            y_axis_config={"include_numbers": labels},
             axis_config={"color": self.COLORS["axes"]},
         )
         if position == "center":
@@ -42,7 +48,7 @@ class BeatFrequency(Scene):
         # Create axes
         axes_wave1 = self.create_axes(UP)
         axes_wave2 = self.create_axes(DOWN)
-        axes_bottom = self.create_axes(DOWN)
+        axes_bottom = self.create_axes(DOWN, labels=True)
 
         # Define sine wave functions
         wave1 = self.define_wave(amplitude, freq1)
@@ -64,12 +70,32 @@ class BeatFrequency(Scene):
         )
 
         # Add labels
-        wave1_label = self.create_label("240 Hz", axes_wave1, self.COLORS["wave1"])
-        wave2_label = self.create_label("242 Hz", axes_wave2, self.COLORS["wave2"])
-        interference_label = self.create_label("Interference", axes_bottom, self.COLORS["interference"])
+        wave1_label = self.create_label(
+            "240 Hz",
+            axes_wave1,
+            self.COLORS["wave1"]
+        )
+        wave2_label = self.create_label(
+            "242 Hz",
+            axes_wave2,
+            self.COLORS["wave2"]
+        )
+        interference_label = self.create_label(
+            "Interference",
+            axes_bottom,
+            self.COLORS["interference"]
+        )
         
-        constructive_label = self.create_label("Constructive", axes_wave1, self.COLORS["constructive"])
-        destructive_label = self.create_label("Destructive", axes_wave1, self.COLORS["destructive"], RIGHT*2.5)
+        constructive_label = self.create_label(
+            "Constructive",
+            axes_wave1,
+            self.COLORS["constructive"]
+        )
+        destructive_label = self.create_label(
+            "Destructive",
+            axes_wave1,
+            self.COLORS["destructive"], RIGHT*2.5
+        )
 
         # Animate individual waves
         self.play(Create(axes_wave1), Create(axes_wave2))
@@ -176,9 +202,30 @@ class BeatFrequency(Scene):
         )
 
         # Add labels
-        wave1_label = self.create_label("240 Hz", axes_wave1, self.COLORS["wave1"], corner=UL)
-        wave2_label = self.create_label("242 Hz", axes_wave2, self.COLORS["wave2"], corner=UL)
-        wave3_label = self.create_label("244 Hz", axes_wave3, self.COLORS["wave3"], corner=UL)
+        wave1_label = self.create_label(
+            "240 Hz",
+            axes_wave1,
+            self.COLORS["wave1"],
+            corner=UL
+        )
+        wave2_label = self.create_label(
+            "242 Hz",
+            axes_wave2,
+            self.COLORS["wave2"],
+            corner=UL
+        )
+        wave3_label = self.create_label(
+            "244 Hz",
+            axes_wave3,
+            self.COLORS["wave3"],
+            corner=UL
+        )
+        interference_label = self.create_label(
+            "Interference",
+            axes_bottom,
+            self.COLORS["interference"],
+            shift_v=UP*1,
+        )
 
         # Animate individual waves
         self.play(Create(axes_wave1), Create(axes_wave2), Create(axes_wave3))
@@ -296,12 +343,24 @@ class BeatFrequency(Scene):
         self.wait(2)
 
 
-    def create_label(self, text, axes, color, shift_h=0, corner=UL):
+    def create_label(
+        self,
+        text,
+        axes,
+        color,
+        shift_h=np.array(0),
+        shift_v=np.array(0),
+        corner=UL
+    ):
         return Text(
             text,
             font_size=24,
             color=color
-        ).move_to(axes.get_corner(corner) + (RIGHT * 1.5 + shift_h) + (DOWN * 0.15))
+        ).move_to(
+            axes.get_corner(corner) + \
+            (RIGHT * 1.5 + shift_h) + \
+            (DOWN * 0.15 + shift_v)
+        )
 
     # def get_color(self, waves, t, threshold=0.5):
     #     total = sum(wave(t) for wave in waves)
@@ -310,9 +369,27 @@ class BeatFrequency(Scene):
     #     if np.abs(total) > threshold * total_abs:
     #         return self.COLORS["constructive"]
     #     else:
-    #         return self.COLORS["destructive"]
+        #         return self.COLORS["destructive"]
 
     def get_color(self, waves, t):
+        def interpolate_hsl(color1, color2, alpha):
+            # Convert the colors to RGB tuples in [0, 1]
+            rgb1 = color_to_rgb(color1)
+            rgb2 = color_to_rgb(color2)
+
+            # Convert RGB to HLS (note: colorsys uses HLS, which is very similar to HSL)
+            h1, l1, s1 = colorsys.rgb_to_hls(*rgb1)
+            h2, l2, s2 = colorsys.rgb_to_hls(*rgb2)
+
+            # Interpolate each component
+            h = h1 + (h2 - h1) * alpha
+            l = l1 + (l2 - l1) * alpha
+            s = s1 + (s2 - s1) * alpha
+
+            # Convert back to RGB and then to a Manim color
+            rgb_interp = colorsys.hls_to_rgb(h, l, s)
+            return rgb_to_color(rgb_interp)
+
         total = sum(wave(t) for wave in waves)
         total_abs = sum(np.abs(wave(t)) for wave in waves)
         if total_abs == 0:
@@ -320,4 +397,4 @@ class BeatFrequency(Scene):
         # interference_factor is 0 for perfect cancellation and 1 for full constructive interference
         interference_factor = np.abs(total) / total_abs
         # interpolate_color interpolates between destructive (RED) and constructive (GREEN)
-        return interpolate_color(self.COLORS["destructive"], self.COLORS["constructive"], interference_factor)
+        return interpolate_hsl(self.COLORS["destructive"], self.COLORS["constructive"], interference_factor)
