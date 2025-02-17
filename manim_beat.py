@@ -1,10 +1,13 @@
-import colorsys
 from manim import *
+from manim.opengl import *
+
+from manim.utils.color.AS2700 import X14_MANDARIN
 from manim.utils.color.X11 import VIOLET
 from manim.utils.color import color_to_rgb, rgb_to_color
 from manim.utils.color.XKCD import BLUEGREEN
 
-ma
+import colorsys
+
 
 class BeatFrequency(Scene):
     COLORS = {
@@ -17,14 +20,16 @@ class BeatFrequency(Scene):
         "axes": WHITE
     }
     X_MAX = 2
+    X_MIN = 0
 
     def create_axes(self, position, height=3, labels=False):
         axes = Axes(
-            x_range=[0, self.X_MAX, 0.2],
+            x_range=[self.X_MIN, self.X_MAX, 0.2],
             y_range=[-2.5, 2.5, 0.5],
             x_length=10,
             y_length=height,
-            y_axis_config={"include_numbers": labels},
+            y_axis_config={"include_numbers": labels, "font_size": 18},
+            x_axis_config={"include_numbers": labels, "font_size": 18},
             axis_config={"color": self.COLORS["axes"]},
         )
         if position == "center":
@@ -44,6 +49,8 @@ class BeatFrequency(Scene):
 
         # step size for wave
         step_size = 0.005
+
+        ## 2 waves beat interference
 
         # Create axes
         axes_wave1 = self.create_axes(UP)
@@ -81,9 +88,10 @@ class BeatFrequency(Scene):
             self.COLORS["wave2"]
         )
         interference_label = self.create_label(
-            "Interference",
+            "2 Wave Interference",
             axes_bottom,
-            self.COLORS["interference"]
+            self.COLORS["interference"],
+            shift_h=RIGHT*1,
         )
         
         constructive_label = self.create_label(
@@ -94,7 +102,8 @@ class BeatFrequency(Scene):
         destructive_label = self.create_label(
             "Destructive",
             axes_wave1,
-            self.COLORS["destructive"], RIGHT*2.5
+            self.COLORS["destructive"],
+            shift_h=RIGHT*2.5,
         )
 
         # Animate individual waves
@@ -164,6 +173,34 @@ class BeatFrequency(Scene):
             )
         self.wait(2)
 
+        vertical_line = Line(
+            axes_bottom.c2p(self.X_MIN, axes_bottom.y_range[0]),
+            axes_bottom.c2p(self.X_MIN, axes_bottom.y_range[1]),
+            color=WHITE,
+        )
+        self.play(Create(vertical_line))
+
+        # 1 second per tick
+        speed = (axes_bottom.c2p(1, 0) - axes_bottom.c2p(0, 0))
+        print("speed", speed)
+        
+        def update_line(mob, dt):
+            mob.shift(RIGHT * speed * dt)
+            current_center = axes_bottom.p2c(mob.get_center())
+            if current_center[0] > self.X_MAX:
+                mob.move_to(np.array([
+                    axes_bottom.c2p(self.X_MIN, 0)[0],
+                    mob.get_center()[1],
+                    mob.get_center()[2],
+                ]))
+
+        vertical_line.add_updater(update_line)
+        self.add_sound("/home/mstudxk5/Projects/ManimLaser/waves2beat.wav")
+
+        self.wait(10)
+
+        vertical_line.remove_updater(update_line)
+
         # Clear previous scene
         self.play(
             *[FadeOut(mob)for mob in self.mobjects]
@@ -171,6 +208,7 @@ class BeatFrequency(Scene):
         )
 
         ## Begin 3 wave animation
+        return
 
         axes_wave1_original = self.create_axes(UP)
         axes_wave1 = self.create_axes(UP, height=2)
@@ -221,9 +259,10 @@ class BeatFrequency(Scene):
             corner=UL
         )
         interference_label = self.create_label(
-            "Interference",
+            "3 Wave Interference",
             axes_bottom,
             self.COLORS["interference"],
+            shift_h=RIGHT*1,
             shift_v=UP*1,
         )
 
@@ -342,6 +381,8 @@ class BeatFrequency(Scene):
             )
         self.wait(2)
 
+        self.interactive_embed()
+
 
     def create_label(
         self,
@@ -359,7 +400,7 @@ class BeatFrequency(Scene):
         ).move_to(
             axes.get_corner(corner) + \
             (RIGHT * 1.5 + shift_h) + \
-            (DOWN * 0.15 + shift_v)
+            (DOWN * 0.1 + shift_v)
         )
 
     # def get_color(self, waves, t, threshold=0.5):
