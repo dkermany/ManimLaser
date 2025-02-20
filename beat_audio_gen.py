@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.io.wavfile import write
 
-SAMPLE_RATE = 44100
+SAMPLE_RATE = 100000
 AMPLITUDE = 1
 DURATION = 4
 
@@ -36,7 +36,7 @@ def main():
     # name = "waves50beat.wav"
     # audio = interference([240 + i for i in range(0, 100, 2)], t)
     
-    name = "waves101beat.wav"
+    name = "waves101beat2.wav"
     audio = interference([240 + i for i in range(0, 202, 2)], t)
 
     write(name, SAMPLE_RATE, audio.astype(np.float32))
