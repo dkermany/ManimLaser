@@ -11,7 +11,7 @@ import colorsys
 
 class BeatFrequency(Scene):
     COLORS = {
-        "wave1": BEIGE,
+        "wave1": GREEN_C,
         "wave2": BLUEGREEN,
         "wave3": VIOLET,
         "interference": BLUE,
@@ -24,25 +24,26 @@ class BeatFrequency(Scene):
     AMPLITUDE = 1
     BASE_FREQ = 30
 
-    def create_axes(self, position, height=3, labels=False, y_max=2.5):
+    def create_axes(self, position, height=3, labels=False, y_max=2.5, step=0.5):
         y_tick = 0.5
         y_numbers = np.arange(-y_max, y_max + y_tick, y_tick)
 
-        mod = 2 if len(y_numbers) < 20 else 5
-        r = 1 if mod == 2 else 0 
+        # mod = 2 if len(y_numbers) < 20 else 5
+        # r = 1 if mod == 2 else 0 
 
-        step = 0.5 if len(y_numbers) < 20 else 5
-        filtered_y_numbers = [
-            num for i, num in enumerate(y_numbers) if i % mod == r or num == 0
-        ]
+        # step = 0.5 if len(y_numbers) < 20 else 5
+        
+        # filtered_y_numbers = [
+        #     num for i, num in enumerate(y_numbers) if i % mod == r or num == 0
+        # ]
         axes = Axes(
             x_range=[self.X_MIN, self.X_MAX*1.05, 0.2],
             y_range=[-y_max, y_max, step],
-            x_length=10,
+            x_length=11,
             y_length=height,
             y_axis_config={
                 "include_numbers": labels,
-                "numbers_to_include": filtered_y_numbers,
+                # "numbers_to_include": filtered_y_numbers,
                 "font_size": 20
             },
             axis_config={"color": self.COLORS["axes"]},
@@ -105,20 +106,63 @@ class BeatFrequency(Scene):
             "2 Wave Interference",
             axes_bottom,
             self.COLORS["interference"],
-            shift_h=RIGHT*1,
+            shift_h=RIGHT*1 + UP*0.2,
         )
         
-        constructive_label = self.create_label(
-            "Constructive",
-            axes_wave1,
-            self.COLORS["constructive"]
-        )
-        destructive_label = self.create_label(
-            "Destructive",
-            axes_wave1,
-            self.COLORS["destructive"],
-            shift_h=RIGHT*2.5,
-        )
+
+        def get_legend_rectangle(height=0.33, width=2.5, num_strips=50, eps=0.00):
+            # Define the number of strips (more strips = smoother gradient)
+            strip_width = (width / num_strips) + eps
+    
+            # Define the start and end colors
+            left_color = self.COLORS["constructive"]
+            right_color = self.COLORS["destructive"]
+            strips = VGroup()
+
+            for i in range(num_strips):
+                # Calculate alpha (goes from 0 to 1)
+                alpha = i / (num_strips - 1)
+                interp_color = self.interpolate_hsl(
+                    left_color,
+                    right_color,
+                    alpha
+                )
+                # Create a thin rectangle (strip) with the interpolated color
+                strip = Rectangle(
+                    width=strip_width,
+                    height=height,
+                    fill_color=interp_color,
+                    fill_opacity=1,
+                    stroke_width=0
+                )
+                # Position each strip next to the previous one
+                # Starting from the left edge (-total_width/2)
+                strip.move_to(np.array([
+                    -width/2 + strip_width/2 + i * strip_width,
+                    0,
+                    0
+                ]))
+                strips.add(strip)
+
+
+            constructive_label = Text(
+                "Constructive",
+                font_size=20,
+                color=self.COLORS["constructive"]
+            ).move_to(strips.get_corner(UL) + UP * 0.3)
+
+            destructive_label = Text(
+                "Destructive",
+                font_size=20,
+                color=self.COLORS["destructive"]
+            ).move_to(strips.get_corner(UR) + UP * 0.3)
+
+            strips.add(constructive_label)
+            strips.add(destructive_label)
+            return strips
+
+        legend_rect = get_legend_rectangle()
+        legend_rect.move_to(axes_wave1.get_top() + UP * 0.2 + LEFT * 2.5)
 
         # Animate individual waves
         self.play(Create(axes_wave1), Create(axes_wave2))
@@ -143,8 +187,7 @@ class BeatFrequency(Scene):
         self.play(
             Create(axes_bottom),
             Write(interference_label),
-            Write(constructive_label),
-            Write(destructive_label),
+            Create(legend_rect),
         )
 
         # Create dynamic waves and interference
@@ -195,8 +238,8 @@ class BeatFrequency(Scene):
 
         def add_vertical_line(audio_name, axes=axes_bottom):
             vertical_line = Line(
-                axes.c2p(self.X_MIN, axes.y_range[0]),
-                axes.c2p(self.X_MIN, axes.y_range[1]),
+                axes.c2p(self.X_MIN+0.03, axes.y_range[0]),
+                axes.c2p(self.X_MIN+0.03, axes.y_range[1]),
                 color=WHITE,
             )
             self.play(Create(vertical_line))
@@ -236,6 +279,7 @@ class BeatFrequency(Scene):
         axes_wave1 = self.create_axes(UP, height=2)
         axes_wave2 = self.create_axes(ORIGIN, height=2)
         axes_wave3 = self.create_axes(DOWN, height=2)
+        axes_bottom = self.create_axes(DOWN, labels=True, y_max=3.5)
 
         # Define sine wave functions
         wave1 = self.define_wave(self.AMPLITUDE, self.BASE_FREQ)
@@ -283,7 +327,7 @@ class BeatFrequency(Scene):
             axes_bottom,
             self.COLORS["interference"],
             shift_h=RIGHT*1,
-            shift_v=UP*0.9,
+            shift_v=UP*0.5,
         )
 
         # Animate individual waves
@@ -316,6 +360,9 @@ class BeatFrequency(Scene):
 
         self.wait(1)
 
+        legend_rect = get_legend_rectangle()
+        legend_rect.move_to(axes_wave1.get_top() + UP * 0.2 + LEFT * 2.5)
+
         self.play(
             Create(axes_bottom),
             Write(interference_label),
@@ -344,8 +391,7 @@ class BeatFrequency(Scene):
                     x_range=[0, self.X_MAX, step_size]
                 )
             ),
-            Write(constructive_label),
-            Write(destructive_label),
+            Create(legend_rect),
         )
 
         # Create dynamic waves and interference
@@ -374,7 +420,7 @@ class BeatFrequency(Scene):
             dynamic_wave3.add(segment_wave3)
             segment_interference = axes_bottom.plot(
                 lambda x: self.interference(
-                    [self.BASE_FREQ + i for i in range(0, 6, 2)], x
+                    [self.BASE_FREQ + i for i in range(0, 3*2, 2)], x
                 ),
                 x_range=[t, t + 0.01, 0.001],
                 color=self.COLORS["interference"]
@@ -413,12 +459,18 @@ class BeatFrequency(Scene):
 
         # self.interactive_embed()
 
-        axes_5 = self.create_axes("center", height=5, labels=True, y_max=6)
+        axes_5 = self.create_axes(
+            "center", 
+            height=5, 
+            labels=True, 
+            y_max=6,
+            step=1,
+        )
 
         # Create wave graphs
         axes_5_graph = axes_5.plot(
             lambda t: self.interference(
-                [self.BASE_FREQ + i for i in range(0, 10, 2)], t
+                [self.BASE_FREQ + i for i in range(0, 5*2, 2)], t
             ),
             color=self.COLORS["interference"],
             x_range=[0, self.X_MAX, step_size]
@@ -426,7 +478,9 @@ class BeatFrequency(Scene):
 
         dot_5 = Dot(color=self.COLORS["interference"], radius=0.075)
 
-        dot_5.add_updater(lambda t: t.move_to(axes_5_graph.get_end()))
+        dot_5.add_updater(
+            lambda t: t.move_to(axes_5_graph.get_end()) # type: ignore
+        )
 
         axes_5_label = self.create_label(
             "5 Waves - Interference",
@@ -450,16 +504,26 @@ class BeatFrequency(Scene):
 
         self.wait(1)
 
-        self.play(FadeOut(axes_5_graph, axes_5_label, dot_5, ))
 
         ## 20 Wave interference
 
-        axes_20 = self.create_axes("center", height=5, labels=True, y_max=20)
+        axes_20 = self.create_axes(
+            "center",
+            height=5,
+            labels=True,
+            y_max=25,
+            step=5,
+        )
+
+        self.play(
+            FadeOut(axes_5, axes_5_graph, axes_5_label, dot_5),
+            FadeIn(axes_20)
+        )
 
         # Create wave graphs
         axes_20_graph = axes_20.plot(
             lambda t: self.interference(
-                [self.BASE_FREQ + i for i in range(0, 40, 2)], t
+                [self.BASE_FREQ + i for i in range(0, 20*2, 2)], t
             ),
             color=self.COLORS["interference"],
             x_range=[0, self.X_MAX, step_size/10.]
@@ -467,7 +531,9 @@ class BeatFrequency(Scene):
 
         dot_20 = Dot(color=self.COLORS["interference"], radius=0.075)
 
-        dot_20.add_updater(lambda t: t.move_to(axes_20_graph.get_end()))
+        dot_20.add_updater(
+            lambda t: t.move_to(axes_20_graph.get_end()) # type: ignore
+        )
 
         axes_20_label = self.create_label(
             "20 Waves - Interference",
@@ -477,8 +543,9 @@ class BeatFrequency(Scene):
             shift_v=UP*0.3
         )
 
-        # Animate individual waves
-        self.play(Transform(axes_5, axes_20), Write(axes_20_label))
+        self.play(
+            Write(axes_20_label),
+        )
 
         self.add(dot_20)
         self.play(
@@ -491,6 +558,110 @@ class BeatFrequency(Scene):
 
         self.wait(1)
 
+        axes_50 = self.create_axes(
+            "center",
+            height=5,
+            labels=True,
+            y_max=50,
+            step=10,
+        )
+
+        self.play(
+            FadeOut(axes_20_graph, axes_20_label, dot_20, axes_20),
+            FadeIn(axes_50)
+        )
+
+        # Create wave graphs
+        axes_50_graph = axes_50.plot(
+            lambda t: self.interference(
+                [self.BASE_FREQ + i for i in range(0, 50*2, 2)], t
+            ),
+            color=self.COLORS["interference"],
+            x_range=[0, self.X_MAX, step_size/20.]
+        )
+
+        dot_50 = Dot(color=self.COLORS["interference"], radius=0.075)
+
+        dot_50.add_updater(
+            lambda t: t.move_to(axes_50_graph.get_end()) # type: ignore
+        )
+
+        axes_50_label = self.create_label(
+            "50 Waves - Interference",
+            axes_50,
+            self.COLORS["interference"],
+            shift_h=RIGHT*0.9,
+            shift_v=UP*0.3
+        )
+
+        # Animate individual waves
+        self.play(
+            Write(axes_50_label),
+        )
+
+        self.add(dot_50)
+        self.play(
+            Create(axes_50_graph),
+            run_time=1,
+            rate_func=linear
+        )
+
+        add_vertical_line("waves50beat.wav", axes=axes_50)
+
+        self.wait(1)
+
+
+        axes_101 = self.create_axes(
+            "center", 
+            height=5, 
+            labels=True, 
+            y_max=90,
+            step=20,
+        )
+
+        self.play(
+            FadeOut(axes_50, axes_50_graph, axes_50_label, dot_50),
+            FadeIn(axes_101)
+        )
+
+        # Create wave graphs
+        axes_101_graph = axes_101.plot(
+            lambda t: self.interference(
+                [self.BASE_FREQ + i for i in range(0, 101*2, 2)], t
+            ),
+            color=self.COLORS["interference"],
+            x_range=[0, self.X_MAX, step_size/100.]
+        )
+
+        dot_101 = Dot(color=self.COLORS["interference"], radius=0.075)
+
+        dot_101.add_updater(
+            lambda t: t.move_to(axes_101_graph.get_end()) # type: ignore
+        )
+
+        axes_101_label = self.create_label(
+            "101 Waves - Interference",
+            axes_101,
+            self.COLORS["interference"],
+            shift_h=RIGHT*0.9,
+            shift_v=UP*0.3
+        )
+
+        # Animate individual waves
+        self.play(
+            Write(axes_101_label)
+        )
+
+        self.add(dot_101)
+        self.play(
+            Create(axes_101_graph),
+            run_time=1,
+            rate_func=linear
+        )
+
+        add_vertical_line("waves101beat.wav", axes=axes_101)
+
+        self.wait(3)
 
     def create_label(
         self,
@@ -511,34 +682,25 @@ class BeatFrequency(Scene):
             (DOWN * 0.1 + shift_v)
         )
 
-    # def get_color(self, waves, t, threshold=0.5):
-    #     total = sum(wave(t) for wave in waves)
-    #     total_abs = sum(np.abs(wave(t)) for wave in waves)
+    def interpolate_hsl(self, color1, color2, alpha):
+        # Convert the colors to RGB tuples in [0, 1]
+        rgb1 = color_to_rgb(color1)
+        rgb2 = color_to_rgb(color2)
 
-    #     if np.abs(total) > threshold * total_abs:
-    #         return self.COLORS["constructive"]
-    #     else:
-        #         return self.COLORS["destructive"]
+        # Convert RGB to HLS (note: colorsys uses HLS)
+        h1, l1, s1 = colorsys.rgb_to_hls(*rgb1)
+        h2, l2, s2 = colorsys.rgb_to_hls(*rgb2)
+
+        # Interpolate each component
+        h = h1 + (h2 - h1) * alpha
+        l = l1 + (l2 - l1) * alpha
+        s = s1 + (s2 - s1) * alpha
+
+        # Convert back to RGB and then to a Manim color
+        rgb_interp = colorsys.hls_to_rgb(h, l, s)
+        return rgb_to_color(rgb_interp)
 
     def get_color(self, waves, t):
-        def interpolate_hsl(color1, color2, alpha):
-            # Convert the colors to RGB tuples in [0, 1]
-            rgb1 = color_to_rgb(color1)
-            rgb2 = color_to_rgb(color2)
-
-            # Convert RGB to HLS (note: colorsys uses HLS, which is very similar to HSL)
-            h1, l1, s1 = colorsys.rgb_to_hls(*rgb1)
-            h2, l2, s2 = colorsys.rgb_to_hls(*rgb2)
-
-            # Interpolate each component
-            h = h1 + (h2 - h1) * alpha
-            l = l1 + (l2 - l1) * alpha
-            s = s1 + (s2 - s1) * alpha
-
-            # Convert back to RGB and then to a Manim color
-            rgb_interp = colorsys.hls_to_rgb(h, l, s)
-            return rgb_to_color(rgb_interp)
-
         total = sum(wave(t) for wave in waves)
         total_abs = sum(np.abs(wave(t)) for wave in waves)
         if total_abs == 0:
@@ -546,4 +708,8 @@ class BeatFrequency(Scene):
         # interference_factor is 0 for perfect cancellation and 1 for full constructive interference
         interference_factor = np.abs(total) / total_abs
         # interpolate_color interpolates between destructive (RED) and constructive (GREEN)
-        return interpolate_hsl(self.COLORS["destructive"], self.COLORS["constructive"], interference_factor)
+        return self.interpolate_hsl(
+            self.COLORS["destructive"],
+            self.COLORS["constructive"],
+            interference_factor
+        )
