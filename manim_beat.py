@@ -1,17 +1,15 @@
 from manim import *
 from manim.opengl import *
 
-from manim.utils.color.AS2700 import X14_MANDARIN
 from manim.utils.color.X11 import BEIGE, VIOLET
 from manim.utils.color import color_to_rgb, rgb_to_color
 from manim.utils.color.XKCD import BLUEGREEN
 
 import colorsys
 
-
 class BeatFrequency(Scene):
     COLORS = {
-        "wave1": GREEN_C,
+        "wave1": BEIGE,
         "wave2": BLUEGREEN,
         "wave3": VIOLET,
         "interference": BLUE,
@@ -23,19 +21,17 @@ class BeatFrequency(Scene):
     X_MIN = 0
     AMPLITUDE = 1
     BASE_FREQ = 30
+    STROKE = 2
 
-    def create_axes(self, position, height=3, labels=False, y_max=2.5, step=0.5):
-        y_tick = 0.5
-        y_numbers = np.arange(-y_max, y_max + y_tick, y_tick)
-
-        # mod = 2 if len(y_numbers) < 20 else 5
-        # r = 1 if mod == 2 else 0 
-
-        # step = 0.5 if len(y_numbers) < 20 else 5
-        
-        # filtered_y_numbers = [
-        #     num for i, num in enumerate(y_numbers) if i % mod == r or num == 0
-        # ]
+    def create_axes(
+        self,
+        position,
+        height=2.5,
+        labels=False,
+        y_max=2.5,
+        step=0.5,
+        buff=1.0, 
+    ):
         axes = Axes(
             x_range=[self.X_MIN, self.X_MAX*1.05, 0.2],
             y_range=[-y_max, y_max, step],
@@ -43,13 +39,12 @@ class BeatFrequency(Scene):
             y_length=height,
             y_axis_config={
                 "include_numbers": labels,
-                # "numbers_to_include": filtered_y_numbers,
                 "font_size": 20
             },
             axis_config={"color": self.COLORS["axes"]},
         )
         if isinstance(position, np.ndarray):
-            axes.to_edge(position, buff=0.3)
+            axes.to_edge(position, buff=buff)
         elif position == "center":
             axes.move_to(ORIGIN)
         else:
@@ -70,7 +65,7 @@ class BeatFrequency(Scene):
         ## 2 waves beat interference
 
         # Create axes
-        axes_wave1 = self.create_axes(UP)
+        axes_wave1 = self.create_axes(UP, buff=1.3)
         axes_wave2 = self.create_axes(DOWN)
         axes_bottom = self.create_axes(DOWN, labels=True)
 
@@ -88,14 +83,15 @@ class BeatFrequency(Scene):
             lambda t:
             wave2(t),
             color=self.COLORS["wave2"],
-            x_range=[0, self.X_MAX, step_size]
+            x_range=[0, self.X_MAX, step_size],
         )
 
         # Add labels
         wave1_label = self.create_label(
             "240 Hz",
             axes_wave1,
-            self.COLORS["wave1"]
+            self.COLORS["wave1"],
+            font_size=28
         )
         wave2_label = self.create_label(
             "242 Hz",
@@ -162,7 +158,7 @@ class BeatFrequency(Scene):
             return strips
 
         legend_rect = get_legend_rectangle()
-        legend_rect.move_to(axes_wave1.get_top() + UP * 0.2 + LEFT * 2.5)
+        legend_rect.move_to(axes_wave1.get_top() + UP * 0.0 + LEFT * 2.5)
 
         # Animate individual waves
         self.play(Create(axes_wave1), Create(axes_wave2))
@@ -178,7 +174,7 @@ class BeatFrequency(Scene):
                 axes_wave1.plot(
                     lambda t: wave2(t),
                     color=self.COLORS["wave2"],
-                    x_range=[0, self.X_MAX, step_size]
+                    x_range=[0, self.X_MAX, step_size],
                 )
             )
         )
@@ -198,19 +194,19 @@ class BeatFrequency(Scene):
             segment_wave1 = axes_wave1.plot(
                 lambda x: wave1(x),
                 x_range=[t, t + 0.01, 0.001],
-                color=self.get_color([wave1, wave2], t)
+                color=self.get_color([wave1, wave2], t),
             )
             segment_wave2 = axes_wave1.plot(
                 lambda x: wave2(x),
                 x_range=[t, t + 0.01, 0.001],
-                color=self.get_color([wave1, wave2], t)
+                color=self.get_color([wave1, wave2], t),
             )
             segment_interference = axes_bottom.plot(
                 lambda x: self.interference(
                     [self.BASE_FREQ + i for i in range(0, 4, 2)], x
                 ),
                 x_range=[t, t + 0.01, 0.001],
-                color=self.COLORS["interference"]
+                color=self.COLORS["interference"],
             )
             dynamic_wave1.add(segment_wave1)
             dynamic_wave2.add(segment_wave2)
@@ -276,9 +272,9 @@ class BeatFrequency(Scene):
         ## Begin 3 wave animation
 
         axes_wave1_original = self.create_axes(UP)
-        axes_wave1 = self.create_axes(UP, height=2)
-        axes_wave2 = self.create_axes(ORIGIN, height=2)
-        axes_wave3 = self.create_axes(DOWN, height=2)
+        axes_wave1 = self.create_axes(UP, buff=1.3, height=1.7)
+        axes_wave2 = self.create_axes(ORIGIN, height=1.7)
+        axes_wave3 = self.create_axes(DOWN, height=1.7)
         axes_bottom = self.create_axes(DOWN, labels=True, y_max=3.5)
 
         # Define sine wave functions
@@ -308,7 +304,8 @@ class BeatFrequency(Scene):
             "240 Hz",
             axes_wave1,
             self.COLORS["wave1"],
-            corner=UL
+            corner=UL,
+            font_size=28,
         )
         wave2_label = self.create_label(
             "242 Hz",
@@ -320,14 +317,15 @@ class BeatFrequency(Scene):
             "244 Hz",
             axes_wave3,
             self.COLORS["wave3"],
-            corner=UL
+            corner=UL,
+            font_size=28,
         )
         interference_label = self.create_label(
             "3 Wave Interference",
             axes_bottom,
             self.COLORS["interference"],
             shift_h=RIGHT*1,
-            shift_v=UP*0.5,
+            shift_v=UP*0.2,
         )
 
         # Animate individual waves
@@ -361,7 +359,7 @@ class BeatFrequency(Scene):
         self.wait(1)
 
         legend_rect = get_legend_rectangle()
-        legend_rect.move_to(axes_wave1.get_top() + UP * 0.2 + LEFT * 2.5)
+        legend_rect.move_to(axes_wave1.get_top() + UP * 0.1 + LEFT * 2.5)
 
         self.play(
             Create(axes_bottom),
@@ -487,7 +485,8 @@ class BeatFrequency(Scene):
             axes_5,
             self.COLORS["interference"],
             shift_h=RIGHT*0.9,
-            shift_v=UP*0.3
+            shift_v=UP*0.3,
+            font_size=28,
         )
 
         # Animate individual waves
@@ -526,7 +525,8 @@ class BeatFrequency(Scene):
                 [self.BASE_FREQ + i for i in range(0, 20*2, 2)], t
             ),
             color=self.COLORS["interference"],
-            x_range=[0, self.X_MAX, step_size/10.]
+            x_range=[0, self.X_MAX, step_size/10.],
+            stroke_width=self.STROKE+0.75,
         )
 
         dot_20 = Dot(color=self.COLORS["interference"], radius=0.075)
@@ -540,7 +540,8 @@ class BeatFrequency(Scene):
             axes_20,
             self.COLORS["interference"],
             shift_h=RIGHT*0.9,
-            shift_v=UP*0.3
+            shift_v=UP*0.3,
+            font_size=28,
         )
 
         self.play(
@@ -577,7 +578,8 @@ class BeatFrequency(Scene):
                 [self.BASE_FREQ + i for i in range(0, 50*2, 2)], t
             ),
             color=self.COLORS["interference"],
-            x_range=[0, self.X_MAX, step_size/20.]
+            x_range=[0, self.X_MAX, step_size/20.],
+            stroke_width=self.STROKE+0.25,
         )
 
         dot_50 = Dot(color=self.COLORS["interference"], radius=0.075)
@@ -630,7 +632,8 @@ class BeatFrequency(Scene):
                 [self.BASE_FREQ + i for i in range(0, 101*2, 2)], t
             ),
             color=self.COLORS["interference"],
-            x_range=[0, self.X_MAX, step_size/100.]
+            x_range=[0, self.X_MAX, step_size/100.],
+            stroke_width=self.STROKE-0.5,
         )
 
         dot_101 = Dot(color=self.COLORS["interference"], radius=0.075)
@@ -670,11 +673,12 @@ class BeatFrequency(Scene):
         color,
         shift_h=np.array(0),
         shift_v=np.array(0),
-        corner=UL
+        corner=UL,
+        font_size=24,
     ):
         return Text(
             text,
-            font_size=24,
+            font_size=font_size,
             color=color
         ).move_to(
             axes.get_corner(corner) + \
